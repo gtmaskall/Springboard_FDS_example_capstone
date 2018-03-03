@@ -33,6 +33,11 @@
 >objectives; and the design and implementation of the programme of measures 
 >needed to achieve them.
 
+>JNCC's work in relation to the Water Framework Directive is discharged through
+>various groups. These include the Inter-Agency Water Framework Directive Nature
+>Conservation Group  (NCG), and the UK Technical Advisory Group's (UKTAG’s)
+>Marine Task Team (MTT) and its Alien Species Group (ASG).
+
 (Source: [JNCC](http://jncc.defra.gov.uk/page-1375))
 
 ### River basin districts
@@ -60,11 +65,21 @@ ACME data science consulting has been engaged on behalf of the UK
 Technical Advisory Group (UKTAG) to conduct a review of the basin management
 plan for the Severn river basin as part of the six-year framework cycle.
 The work will review the planned investments in the context of tackling
-priority areas. It will also investigate some novel approaches to monitoring
+priority areas.
+
+* Are the currently planned measures still the most appropriate?
+* Do the planned measures omit any locations that require them?
+    * This may feed into preliminary work planning measures for the next 
+    improvement cycle
+
+It will also investigate some novel approaches to monitoring
 and predicting water quality issues so preventative measures may be taken in
 a timely fashion. In a time of pressured budgets, a finer control of water
-quality parameters may allow some planned works to be delayed, or other ones,
+quality may allow some planned works to be delayed, or other ones,
 perhaps in more sensitive areas, be advanced.
+Better modeling of the response of water quality to key parameters will 
+help choose the most appropriate engineering solution for a given
+location. 
 
 ## Key data resources
 
@@ -85,16 +100,32 @@ to obtain associated metadata.
 
 ## Outcomes
 
-The first set of outcomes from this study will use RBMP-level data to
+The first set of outcomes from this study will use 
+[RBMP-level data](http://environment.data.gov.uk/catchment-planning/RiverBasinDistrict/9)
+to
 
 * provide reassurance that the current RBMP is appropriate and on track to 
 deliver the expected objectives, and
 * highlight any areas of concern and offer remediation steps.
 
-The second set of outcomes will use 
+The second set of outcomes will use Environment Agency 
+[water quality archive data](http://environment.data.gov.uk/water-quality/view/download#)
+for selected regions to obtain a number of water quality parameters over location
+and time. The water quality data do not contain common location identifiers with the
+RBD data, which will add a hurdle to joining those data. Easting and Northing are
+given for both sets, though, meaning proximal common locations can be identified.
+These water quality parameters will form input to models used for inference
+and prediction.
+
+All of these data are readily available for download as CSV (or zip archives of).
+
+## Deliverables
+
+The client will be provided with all analysis code, modelling code, a final technical
+report and an executive summary slide deck.
 
 ## Links
 
-Directive 2000/60/EC of the European Parliament and of the Council of 23
+[Directive 2000/60/EC of the European Parliament and of the Council of 23
 October 2000 establishing a framework for Community action in the field of
-water policy [URL](http://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32000L0060)
+water policy](http://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32000L0060)
