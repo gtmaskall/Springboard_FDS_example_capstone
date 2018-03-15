@@ -3,12 +3,16 @@
 ## Introduction
 
 This note is auxiliary documentation supporting the development of the
-formal project proposal. The distinction of a formal proposal, as opposed to the
+[full project proposal](full_proposal.md). It is not a document expected 
+from students doing their project.
+The distinction of a full proposal, as opposed to the
 initial [proposal](proposal.md), was made when additional information came to light
 that started to generate more concrete ideas. Whilst students aren't expected to
 go to great lengths in obtaining supplementary information that leads to a professional
 style proposal to a client, it seemed worth capturing some of the processes involved
-in the journey to develop a really interesting, real-world project.
+in the journey to develop a really interesting, real-world project. It is entirely
+acceptable, indeed likely and encouraged, that an initial proposal will be refined
+as the student starts digging into the project.
 
 ## Initial idea
 
@@ -76,9 +80,9 @@ This was a useful page for background information:
 
 ## Developing the proposal
 
-By skim-reading a few websites and following our noses, as a consultant coming
-from outside the environmental water quality field, we have already started to
-piece together some very useful background knowledge:
+By skim-reading a few websites and following our noses, as a consultant data 
+scientist coming from outside the environmental water quality field, we have 
+already started to piece together some very useful background knowledge:
 
 * New regulations were adopted in 2000 (interestingly, and most likely not
 coincidentally, this is the year the open WIMS data starts)
@@ -182,7 +186,7 @@ high nutrient measurements in the open WIMS data for this water course.
 
 ### Reasons for not Achieving Good Data
 
-Here again we have multiple water course (e.g. late, river) observations over
+Here again we have multiple water course (e.g. lake, river) observations over
 time (by year), with water body ID given along with the classiciation status,
 level and element. It's not defined what the Classification level refers to
 (e.g. "Element") or whether a Classification Status of "Does Not Support Good"
