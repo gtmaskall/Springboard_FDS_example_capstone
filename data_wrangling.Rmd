@@ -6,13 +6,20 @@ date: '`r format(Sys.Date(), "%d %B, %Y")`'
 
 # RBD/RBMP data
 
+## Introduction
+
 This report documents the process of obtaining and preparing the
 River Severn basin district data. The main download page is
 [here](http://environment.data.gov.uk/catchment-planning/RiverBasinDistrict/9).
 There are a number of files already identified as potentially relevant.
 The first step is to download them so they can be read into R. We shall do this
-programmatically so thereby having a script that be run on multiple computers
+programmatically so thereby having a script that can be run on multiple computers
 and will obtain the original data on its first run.
+
+## Download and verify RBD data
+
+In the code chunk below we specify the data we want to obtain and ensure it
+is available and as expected.
 
 ```{r, downloads}
 library(tools) # for md5sum
@@ -22,20 +29,24 @@ class_url <- paste0("http://environment.data.gov.uk/catchment-planning/",
                     "RiverBasinDistrict/9/classification?item=all&status=all",
                     "&format=csv")
 class_md5 <- "6d90201502183a9b5bf489d7b6e5a212"
+
 measures_file <- "Data/measures.zip"
 measures_url <- paste0("http://environment.data.gov.uk/catchment-planning/",
                        "RiverBasinDistrict/9/Action?format=csv")
 measures_md5 <- "ac5eb5ce96871ab4d3dcc59d30a917e1"
+
 objectives_file <- "Data/objectives.zip"
 objectives_url <- paste0("http://environment.data.gov.uk/catchment-planning/",
                          "RiverBasinDistrict/9/outcome?item=all&status=all",
                          "&format=csv")
 objectives_md5 <- "7d93caa97c087115c9f9f17f1667a8eb"
+
 reasons_file <- "Data/reasons.zip"
 reasons_url <- paste0("http://environment.data.gov.uk/catchment-planning/",
                       "RiverBasinDistrict/9/ReasonsForNotAchievingGood?item=all",
                       "&format=csv")
 reasons_md5 <- "54f5363d8fad58ed9cdf9cff9c9b7d4c"
+
 waterbody_file <- "Data/waterbody_links.zip"
 waterbody_url <- paste0("http://environment.data.gov.uk/catchment-planning/",
                         "RiverBasinDistrict/9/pa/csv")
@@ -85,3 +96,64 @@ The md5sum checks above are against the md5sums calculated on an initial downloa
 of the data. Files, particularly online, can change. Successful md5sum checks
 here confirm that the files are identical to those expected by this analysis and
 thus should yield reproducible results.
+
+## Initial data view
+
+### Classification data
+
+Reading in the classification file (a CSV within a zip), and performing a basic
+check, we see the following.
+
+```{r, read_class}
+classification <- read_csv("Data/classifications.zip")
+classification %>% glimpse
+classification %>% summarise_all(funs(sum(is.na(.)))) %>% gather(column, num_NA)
+```
+
+From the output above we can see that the column data types have been reasonably
+and correctly guessed. The only missing values are in the Certainty, Confidence,
+and Investigation Outcome columns. This is no concern at the moment. The main
+data issues so far are the lack of a data dictionary. The interpretation of
+many columns is obvious, but some require some care.
+
+A description of the Management catchment can be found in the glossary
+[here](http://environment.data.gov.uk/catchment-planning/glossary#m) where
+we see a management catchment is
+
+>an amalgamation of a number of river water body catchments that provide
+>a management unit at which level actions are applied. Management catchments are
+>hydrological management areas. They are built up from river water body
+>catchments into similar sized management units, of a scale that suits
+>management and planning from an Environment Agency perspective. All the land
+>area of England and Wales is divided into management catchments, so they
+>include the coastline as part of their definition. They do not have a formal
+>statutory reporting role.
+
+Similarly, an operation catchment is
+
+>an amalgamation of a small number of river water body catchments. Operational
+>catchments are smaller units, as a rule, than management catchments. They are
+>used in the economic analysis process to identify packages of measures that can
+>be applied to improve the ecological status of the water bodies within it
+
+and a water body is
+
+>a unit of surface water, being the whole (or part) of a stream, river or canal,
+>lake or reservoir, estuary or stretch of coastal water. A groundwater water
+>body is a defined area of an aquifer with geological and hydrological
+>boundaries to ensure consistency and avoid fragmentation.
+
+The hydromorphology of a water body is described to be
+
+>the hydrological and geomorphological processes and attributes of surface water
+>bodies. For example for rivers, hydromorphology describes the form and function
+>of the channel as well as its connectivity (up and downstream and with
+>groundwater) and flow regime, which defines its ability to allow migration of
+>aquatic organisms and maintain natural continuity of sediment transport through
+>the fluvial system. The Water Framework Directive requires surface waters to be
+>managed in such a way as to safeguard their hydrology and geomorphology so that
+>ecology is protected.
+
+The classification hierarchy is described clearly and graphically
+[here](http://environment.data.gov.uk/catchment-planning/help#help-classification-hierarchy).
+
