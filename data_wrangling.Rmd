@@ -117,6 +117,9 @@ check, we see the following.
 classification <- read_csv("Data/classifications.zip")
 classification %>% glimpse
 classification %>% summarise_all(funs(sum(is.na(.)))) %>% gather(column, num_NA)
+# remove the original endpoint URL
+classification <- classification %>%
+    select(-`classification ID`)
 ```
 
 From the output above we can see that the column data types have been reasonably
@@ -197,6 +200,11 @@ which does not seem crucial.
 objectives <- read_csv("Data/objectives.zip")
 objectives %>% glimpse
 objectives %>% summarise_all(funs(sum(is.na(.)))) %>% gather(column, num_NA)
+# remove the original endpoint URLs
+objectives <- objectives %>%
+    select(-c(`River Basin District URI`,
+              `Management Catchment URI`,
+              `Operational Catchment URI`))
 ```
 
 ### Reasons
@@ -214,6 +222,9 @@ reasons %>%
     summarise_all(funs(sum(is.na(.)))) %>% 
     gather(column, num_NA) %>%
     print(n = Inf)
+# remove original endpoint for RNAG URL (we have the ID)
+reasons <- reasons %>%
+    select(-`Rnag URL`)
 ```
 
 We see there are currently unknown column values such as "RFF" in the Reason
@@ -230,7 +241,105 @@ waterbody %>% glimpse
 waterbody %>% summarise_all(funs(sum(is.na(.)))) %>% gather(column, num_NA)
 ```
 
+## Data deduplication
 
+It is clear that there are a number of columns that appear in multiple, if not
+all dataframes. These are (with some minor name differences):
+
+* Water body ID
+* Water body type
+* Water body
+* Operational catchment
+* Management catchment
+* River basin district
+
+Not only does this mean we carry around redundant, duplicated columns, we
+also risk confusion with multiple, but subtly different columns occuring in the
+same dataframe after any join operation. A convenient task now is to extract
+those columns into a separate dataframe and leave only the water body ID in
+the original dataframe with which we can join the data. This is on the
+understanding that the water body ID is the unique key. Furthermore, we can
+check this assumption that water body ID is unique.
+
+```{r, extract_wb}
+# Settle on the convention:
+# Waterbody_ID
+# Waterbody_type
+# Waterbody
+# Operational_catchment
+# Management_catchment
+# RBD
+# Easting
+# Northing
+# NGR
+
+# Assume here the easting, northing, and NGR refer to a particular
+# water body ID.
+class_wb <- classification %>%
+    select(Waterbody_ID = `Waterbody ID`,
+           Waterbody_type = `Water body type`,
+           Waterbody = `water body`,
+           Operational_catchment = `Operational catchment`,
+           Management_catchment = `Management catchment`,
+           RBD = `River basin district`,
+           Easting,
+           Northing,
+           NGR = Ngr) %>%
+    distinct
+
+class_wb %>% count(`Waterbody_ID`) %>% filter(n > 1)
+
+measures_wb <- measures %>%
+    select(Waterbody_ID = `Waterbody ID`,
+           Operational_catchment = `Operational Catchment`,
+           Management_catchment = `Management Catchment`,
+           RBD = `River Basin District`) %>%
+    distinct
+
+measures_wb %>% count(`Waterbody_ID`) %>% filter(n > 1)
+
+# It's not clear at the moment whether hydromorphological designation
+# is constant for a given water body so we won't extract this now.
+objectives_wb <- objectives %>%
+    select(Waterbody_ID = `Waterbody ID`,
+           Waterbody_type = `Water body type`,
+           Waterbody = `water body`,
+           Operational_catchment = `Operational Catchment`,
+           Management_catchment = `Management Catchment`,
+           RBD = `River Basin District`,
+           Easting,
+           Northing,
+           NGR = Ngr) %>%
+    distinct
+
+objectives_wb %>% count(`Waterbody_ID`) %>% filter(n > 1)
+
+reasons_wb <- reasons %>%
+    select(Waterbody_ID = `Water body id`,
+           Waterbody_type = `Water body type`,
+           Waterbody = `water body`,
+           Operational_catchment = `Operational Catchment`,
+           Management_catchment = `Management Catchment`,
+           RBD = `River Basin District`) %>%
+    distinct
+
+reasons_wb %>% count(`Waterbody_ID`) %>% filter(n > 1)
+
+waterbody_wb <- waterbody %>%
+    select(Waterbody_ID = `Waterbody ID`,
+           Operational_catchment = `Operational catchment`,
+           Management_catchment = `Management catchment`,
+           RBD = `River basin district`) %>%
+    distinct
+
+waterbody_wb %>% count(`Waterbody_ID`) %>% filter(n > 1)
+
+### TODO
+class_meas <- full_join(class_wb, measures_wb)
+class_meas %>% filter(is.na(Waterbody_type))
+# This highlights something I remember - some IDs seem combined!
+# Find them and decide how to deal with them!
+```
 
 ## Summary
 
