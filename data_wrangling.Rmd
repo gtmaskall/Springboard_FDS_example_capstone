@@ -16,6 +16,10 @@ The first step is to download them so they can be read into R. We shall do this
 programmatically so thereby having a script that can be run on multiple computers
 and will obtain the original data on its first run.
 
+```{r, setup}
+library(tidyverse)
+```
+
 ## Download and verify RBD data
 
 In the code chunk below we specify the data we want to obtain and ensure it
@@ -157,3 +161,73 @@ The hydromorphology of a water body is described to be
 The classification hierarchy is described clearly and graphically
 [here](http://environment.data.gov.uk/catchment-planning/help#help-classification-hierarchy).
 
+### Measures data
+
+The measures data contains a relatively small number of planned measures
+(works) as shown below.
+
+
+```{r, read_measures}
+measures <- read_csv("Data/measures.zip")
+measures %>% glimpse
+measures %>% summarise_all(funs(sum(is.na(.)))) %>% gather(column, num_NA)
+```
+
+Useful columns definitely seem to be Waterbody ID, which could be linked back
+to the classifications data. RNAG means "Reason for not achieving good" and will
+link to another table. Most columns are character, although the estimated start
+date is correctly read in as a date. There are a few missing values limited to
+estimated start date, a measure category, and funding/organization. The meaning
+of Measure type (e.g. "WBLMA") is not currently understood.
+
+### Objectives
+
+The value of the objectives data is less certain. Many columns have already
+been seen and the main addition seems to be the ObjectiveType column, which
+can hold either the value "Objective" or "Predicted".
+The only missing values are in the "Reasons for Alternative Objectives" column,
+which does not seem crucial.
+
+```{r, read_objectives}
+objectives <- read_csv("Data/objectives.zip")
+objectives %>% glimpse
+objectives %>% summarise_all(funs(sum(is.na(.)))) %>% gather(column, num_NA)
+```
+
+### Reasons
+
+The reasons data is understood to contain data pertaining to
+"Reasons for not achieving good". As such, there is an Id column that should
+be useful for linking with Linked RNAG in the measures data. Thus these two
+datasets together could be interesting for relating water bodies that failed
+to achieve good status with measures (planned) for remediating that.
+
+```{r, read_reasons}
+reasons <- read_csv("Data/reasons.zip")
+reasons %>% glimpse
+reasons %>% 
+    summarise_all(funs(sum(is.na(.)))) %>% 
+    gather(column, num_NA) %>%
+    print(n = Inf)
+```
+
+We see there are currently unknown column values such as "RFF" in the Reason
+type column. The columns with names referring to Pressure Tier are also
+currently not understood, as as Swmi.
+There are some missing values in the Pressure tier columns, for example, but
+these will be assessed once the meaning of those columns is better known.
+
+### Waterbody links
+
+```{r, read_waterbody}
+waterbody <- read_csv("Data/waterbody_links.zip")
+waterbody %>% glimpse
+waterbody %>% summarise_all(funs(sum(is.na(.)))) %>% gather(column, num_NA)
+```
+
+
+
+## Summary
+
+The data seem to be of general good quality, with the main issue being that of
+understanding and interpreting some columns.
