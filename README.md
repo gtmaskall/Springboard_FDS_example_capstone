@@ -7,6 +7,7 @@ stages in a Springboard data science capstone project.
 The key stages, or milestones, with links to their sections in the Springboard curriculum, are:
 
 * [initial ideas](https://www.springboard.com/workshops/data-science/learn/#/curriculum/596)
+    [My submission](initial_ideas.md)
 * [proposal](https://www.springboard.com/workshops/data-science/learn/#/curriculum/576)
 * [data wrangling](https://www.springboard.com/workshops/data-science/learn/#/curriculum/577)
 * [statistics](https://www.springboard.com/workshops/data-science/learn/#/curriculum/1169)
