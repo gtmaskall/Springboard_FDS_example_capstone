@@ -1,5 +1,5 @@
 ---
-title: 'Data wrangling report'
+title: 'Data wrangling'
 author: 'Guy Maskall'
 date: '`r format(Sys.Date(), "%d %B, %Y")`'
 output:
@@ -334,14 +334,291 @@ waterbody_wb <- waterbody %>%
 
 waterbody_wb %>% count(`Waterbody_ID`) %>% filter(n > 1)
 
-### TODO
 class_meas <- full_join(class_wb, measures_wb)
 class_meas %>% filter(is.na(Waterbody_type))
 # This highlights something I remember - some IDs seem combined!
 # Find them and decide how to deal with them!
 ```
 
+The combined water body IDs originate from the measures table, as shown
+below:
+
+```{r, measures_combines_wb_ID}
+measures %>% 
+    filter(str_detect(`Waterbody ID`, "\\|")) %>% 
+    glimpse
+
+# e.g.
+measures %>%
+    filter(ID == 39579) %>%
+    glimpse
+```
+
+Looking at the rows containing the "|" character, we find there are four such 
+measures rows, each with their own ID. We also see the Linked RNAGs column
+contains merged IDs. From this we piece together the picture that each of 
+these four measures are associated with more than one water body ID and its
+reason for not achieving good. This makes it harder to associate a water body
+ID with an associated measure and so we prefer to split these records out into
+separate rows. We can do this by splitting and unnesting on the two affected
+columns:
+
+```{r, separate_measure_rows}
+measures <- measures %>% 
+    filter(str_detect(`Waterbody ID`, "\\|")) %>% 
+    mutate(`Waterbody ID` = str_split(`Waterbody ID`, "\\|"), 
+           `Linked RNAGs` = str_split(`Linked RNAGs`, "\\|")) %>% 
+    unnest(`Waterbody ID`, `Linked RNAGs`)
+
+# e.g.
+measures %>%
+    filter(ID == 39579) %>%
+    glimpse
+
+#regenerate the measures_wb table
+measures_wb <- measures %>%
+    select(Waterbody_ID = `Waterbody ID`,
+           Operational_catchment = `Operational Catchment`,
+           Management_catchment = `Management Catchment`,
+           RBD = `River Basin District`) %>%
+    distinct
+
+measures_wb %>% count(`Waterbody_ID`) %>% filter(n > 1)
+```
+
+We now have a separate row for each water body ID and Linked RNAG at the cost
+of duplicate measure IDs. We should remember this if analysing data at the 
+measure-level in future.
+
+The classification and objectives tables contain a full set of our "water body"
+columns, namely:
+
+* Waterbody ID
+* Waterbody type
+* Waterbody
+* Operational catchment
+* Management catchment
+* River basin district
+* Easting
+* Northing
+* NGR
+
+If we combine all these columns for both of these tables, we hope to get no
+duplicated waterbody IDs, thus:
+
+```{r, full_wb_check}
+full_wb <- bind_rows(class_wb, objectives_wb) %>%
+    distinct 
+
+full_wb %>% 
+    count(Waterbody_ID) %>% 
+    filter(n > 1)
+```
+
+The above result shows that combining all rows from both tables yields no
+duplicated water body IDs; each ID is associated with a unique combination
+of type, name, location etc.
+
+Similarly, the measures and waterbody tables share the columns
+
+* Waterbody ID
+* Operational catchment
+* Management catchment
+* River basin district
+
+and we can repeat the above process to check for duplicates
+(non-unique waterbody ID) thus:
+
+```{r, meas_wb_check}
+min_wb <- bind_rows(measures_wb, waterbody_wb) %>%
+    distinct 
+
+min_wb %>% 
+    count(Waterbody_ID) %>% 
+    filter(n > 1)
+```
+
+The above null result confirms there are no duplicated waterbody IDs (with
+different values in the other columns).
+
+The reasons table contains columns for water body type and waterbody that our
+new min_wb does not. If we were to simply combine rows we would possibly end 
+up with duplicate waterbody IDs because of some NAs for values in the min_wb
+table. To merge these tables and check for uniqueness of the waterbody ID we
+can employ another method and perform a join that preserves all rows but
+effectives merges any duplicates:
+
+```{r, merge_min_reason_check}
+min_wb <- min_wb %>% 
+    full_join(reasons_wb)
+
+min_wb %>% glimpse
+
+min_wb %>%
+    count(Waterbody_ID) %>%
+    filter(n > 1)
+
+min_wb %>%
+    summarise_all(funs(sum(is.na(.)))) %>%
+    gather(column, num_NA)
+```
+
+The above results show that after the join, there are no rows with duplicated
+waterbody ID and no rows where waterbody ID is missing. Thus all rows describe
+a one-to-one mapping of waterbody ID to other parameters. Note there are some
+waterbody IDs for which waterbody type and waterbody are unknown.
+
+Finally we can employ the same method again to do a last join between the first
+full set of waterbody parameters and this recent, less comprehensive, set of
+parameters.
+
+```{r, final_wb_join_check}
+full_wb <- full_wb %>% 
+    full_join(min_wb)
+
+full_wb %>% glimpse
+
+full_wb %>%
+    count(Waterbody_ID) %>%
+    filter(n > 1)
+
+full_wb %>%
+    summarise_all(funs(sum(is.na(.)))) %>%
+    gather(column, num_NA)
+```
+
+The above results show us there are now 88 duplicated waterbody ID and, by
+a suspicious coincidence, 88 NAs for waterbody type, waterbody, easting,
+northing, and NGR. A spot check of the first duplicated Waterbody ID shows
+that, indeed, it is duplicated because one set of values is NA:
+
+```{r, dup_wb_ID_check}
+full_wb %>% 
+    select(Waterbody_ID, Waterbody_type, Waterbody, Easting, Northing, NGR) %>% 
+    filter(Waterbody_ID == "GB109053022030") %>% 
+    glimpse
+```
+
+We can attempt to resolve this with the following recipe:
+
+1. group by waterbody ID
+2. mutate each column affected with NAs, replacing NAs with the first non-NA
+3. retain only distinct rows
+
+The step of taking the first NA value ensures the method should work even if
+somehow there were multiple non-NA values. It would then be arbitrary which
+value was used, but this won't matter if the values are the same. If the values
+are different, a problem will still show up later on.
+
+```{r, final_wb_fix}
+# It's worth documenting what this mutate_at is doing:
+# The first argument is the list of columns we want to operate on,
+# the . denotes the column currently being operated on,
+# the rule is then simply "if a value is NA, replace it with the
+# first non-NA value, else leave it unchanged.
+# (NB sometimes even the more experience of us are amazed and impressed
+# that something works as intended)!
+full_wb <- full_wb %>% 
+    group_by(Waterbody_ID) %>% 
+    mutate_at(c("Waterbody_type", "Waterbody", "Easting", "Northing", "NGR"),
+              funs(if_else(is.na(.), .[!is.na(.)][1], .))) %>% 
+    ungroup
+
+full_wb %>% 
+    select(Waterbody_ID, Waterbody_type, Waterbody, Easting, Northing, NGR) %>% 
+    filter(Waterbody_ID == "GB109053022030") %>% 
+    glimpse
+
+# now that we've rechecked the above ID, we can remove duplicates
+full_wb <- distinct(full_wb)
+
+full_wb %>%
+    count(Waterbody_ID) %>%
+    filter(n > 1)
+
+full_wb %>%
+    summarise_all(funs(sum(is.na(.)))) %>%
+    gather(column, num_NA)
+
+full_wb %>% saveRDS("Data/waterbody.rds")
+```
+
+This seems to confirm we have now gathered together and merged all our waterbody
+details into a single table with no duplicated waterbody ID and no missing
+values!
+
+
+## Final data tables
+
+We can now create our stripped down tables to be accompanied by this new
+table of waterbody details.
+
+```{r, final_tables}
+classification <- classification %>%
+    select(-c(`River basin district`, 
+              `Management catchment`, 
+              `Operational catchment`, 
+              `water body`, 
+              `Water body type`, 
+              `Easting`, 
+              `Northing`, 
+              `Ngr`)) %>%
+    rename(Waterbody_ID = `Waterbody ID`)
+
+classification %>% glimpse
+classification %>% saveRDS("Data/classification.rds")
+
+measures <- measures %>%
+    select(-c(`River Basin District`,
+              `Management Catchment`,
+              `Operational Catchment`)) %>%
+    rename(Waterbody_ID = `Waterbody ID`)
+
+measures %>% glimpse
+measures %>% saveRDS("Data/measures.rds")
+
+objectives <- objectives %>%
+    select(-c(`River Basin District`,
+              `Management Catchment`,
+              `Operational Catchment`,
+              `water body`,
+              `Water body type`,
+              Easting,
+              Northing,
+              Ngr)) %>%
+    rename(Waterbody_ID = `Waterbody ID`)
+
+objectives %>% glimpse
+objectives %>% saveRDS("Data/objectives.rds")
+
+reasons <- reasons %>%
+    select(-c(`River Basin District`,
+              `Management Catchment`,
+              `Operational Catchment`,
+              `water body`,
+              `Water body type`)) %>%
+    rename(Waterbody_ID = `Water body id`)
+
+reasons %>% glimpse
+reasons %>% saveRDS("Data/reasons.rds")
+
+waterbody <- waterbody %>%
+    select(-c(`River basin district`,
+              `Management catchment`,
+              `Operational catchment`)) %>%
+    rename(Waterbody_ID = `Waterbody ID`)
+
+waterbody %>% glimpse
+# more appropriate name for this file as it relates
+# water body IDs to protected area details
+waterbody %>% saveRDS("Data/protected_area.rds")
+```
+
 ## Summary
 
-The data seem to be of general good quality, with the main issue being that of
-understanding and interpreting some columns.
+The data seem to be of general good quality. The first issue was
+understanding and interpreting some columns. There will be some work
+remaining on this. The next issue was identifying some duplicate columns
+across the various tables and some work was put in to extract those
+columns into a new table and check for any duplicates and other issues,
+one of which was found to be some IDs being merged in one table.
