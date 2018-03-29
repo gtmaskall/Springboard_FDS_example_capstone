@@ -9,6 +9,7 @@ The key stages, or milestones, with links to their sections in the Springboard c
 * [initial ideas](https://www.springboard.com/workshops/data-science/learn/#/curriculum/596)
     [(submission)](initial_ideas.md)
 * [proposal](https://www.springboard.com/workshops/data-science/learn/#/curriculum/576)
+    [(submission)](full_proposal.md)
 * [data wrangling](https://www.springboard.com/workshops/data-science/learn/#/curriculum/577)
 * [statistics](https://www.springboard.com/workshops/data-science/learn/#/curriculum/1169)
 * [data story](https://www.springboard.com/workshops/data-science/learn/#/curriculum/458)
