@@ -72,3 +72,8 @@ document, and we should always strive to produce such a document, but it's not
 what we'd want to present to a stakeholder who wished to read a higher level
 overview of what has been done to the data so far! We'll create that
 report [here](data_wrangling_report.md).
+
+In my opinion, both of these files are important to have in your project
+repository. The latter one is very useful as a readable overview of the
+data wrangling steps you have performed whereas the detailed R markdown serves 
+as a way to completely capture the detail.
